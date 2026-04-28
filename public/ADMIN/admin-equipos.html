@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Gestión de Equipos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../ADMIN/adminCSS.css">
+</head>
+<body>
+
+<header class="admin-hero">
+  <div class="hero-contenido">
+    <p class="admin-etiqueta">FIFA World Cup 2026</p>
+    <h1>Gestión de Equipos</h1>
+    <nav class="admin-nav">
+      <a href="../ADMIN/admin-dashboard.html">Panel Principal</a>
+      <a href="../ADMIN/admin-jugadores.html">Gestionar Jugadores</a>
+      <a href="../ADMIN/admin-equipos.html" class="activo">Gestionar Equipos</a>
+      <a href="../COLECCIONISTA/MAIN/index.html" class="salir">Cerrar sesión</a>
+    </nav>
+  </div>
+</header>
+
+<main class="admin-layout">
+  <section class="card-panel">
+    <div class="encabezado-seccion">
+      <h2>Registrar Equipo</h2>
+      <div class="acciones-superiores">
+        <a href="../ADMIN/admin-dashboard.html" class="boton-secundario">Volver al panel</a>
+      </div>
+    </div>
+
+    <form>
+      <div class="campo">
+        <label>Nombre del País</label>
+        <input type="text" required>
+      </div>
+
+      <div class="campo">
+        <label>Grupo</label>
+        <select>
+          <option>A</option>
+          <option>B</option>
+          <option>C</option>
+          <option>D</option>
+          <option>E</option>
+          <option>F</option>
+          <option>G</option>
+          <option>H</option>
+        </select>
+      </div>
+
+      <div class="campo-completo">
+        <label>Escudo / Bandera</label>
+        <input type="file">
+      </div>
+
+      <div class="form-acciones">
+        <button type="submit">Guardar Equipo</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card-panel">
+    <h2>Equipos Registrados</h2>
+
+    <div class="table-wrap">
+      <table>
+        <tr>
+          <th>País</th>
+          <th>Grupo</th>
+          <th>Acciones</th>
+        </tr>
+
+        <tr>
+          <td>México</td>
+          <td>C</td>
+          <td>
+            <button>Editar</button>
+            <button>Eliminar</button>
+          </td>
+        </tr>
+
+        <tr>
+          <td>Argentina</td>
+          <td>D</td>
+          <td>
+            <button>Editar</button>
+            <button>Eliminar</button>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </section>
+</main>
+
+</body>
+</html>
