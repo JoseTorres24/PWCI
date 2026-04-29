@@ -1,0 +1,26 @@
+# Archivos de configuración (ignorar siempre)
+.env
+backend/config/.env
+
+# Logs
+*.log
+login_debug.log
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Dependencias (si usas Composer)
+vendor/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de prueba
+test_*.php
+hash.php
+
+# IDE
+.vscode/
+.idea/
