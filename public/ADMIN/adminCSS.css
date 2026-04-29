@@ -29,7 +29,7 @@ body {
   color: var(--texto);
   background:
     linear-gradient(rgba(0, 0, 0, 0.52), rgba(0, 0, 0, 0.58)),
-    url('FIFA-World-Cup-2026.jpg') center/cover fixed no-repeat;
+    url('../ASSETS/FIFA-World-Cup-2026.jpg') center/cover fixed no-repeat;
 }
 
 body::before {

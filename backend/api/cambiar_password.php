@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 
-require_once __DIR__ . '/../config/db.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/backend/config/db.php';
 
 $db = new Database();
 $conn = $db->connect();

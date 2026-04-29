@@ -50,7 +50,22 @@ if (file_exists($staticFile) && is_file($staticFile)) {
         exit;
     }
 }
+// ========== RUTAS DEL ADMIN ==========
+$adminRoutes = [
+    'admin' => 'public/ADMIN/admin_dashboard.php',
+    'admin/dashboard' => 'public/ADMIN/admin_dashboard.php',
+    'admin/equipos' => 'public/ADMIN/admin_equipos.php',
+    'admin/jugadores' => 'public/ADMIN/admin_jugadores.php',
+    'admin/editar_equipo' => 'public/ADMIN/admin_editar_equipo.php',
+    'admin/editar_jugador' => 'public/ADMIN/admin_editar_jugador.php',
+    'admin/login' => 'public/ADMIN/admin_login.php',
+    'admin/logout' => 'public/ADMIN/admin_logout.php',
+];
 
+if (isset($adminRoutes[$uri])) {
+    require $adminRoutes[$uri];
+    exit;
+}
 // ========== RUTAS DEL FRONTEND ==========
 if (empty($uri)) {
     require 'public/COLECCIONISTA/MAIN/index.php';
