@@ -7,6 +7,7 @@
     --card: #fff;
     --text: #0f1733;
     --muted: #60708f;
+    --soft: #eef2f7;
 }
 
 * {
@@ -30,8 +31,9 @@ body::before {
     z-index: -1;
 }
 
+/* ========== PAGE SHELL ========== */
 .page-shell {
-    width: min(1180px, calc(100% - 28px));
+    width: min(1280px, calc(100% - 28px));
     margin: 18px auto;
     background: rgba(244, 246, 250, 0.95);
     border-radius: 28px;
@@ -39,9 +41,10 @@ body::before {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
 }
 
+/* ========== TOPBAR ========== */
 .topbar {
     background: linear-gradient(135deg, var(--teal), var(--teal-dark));
-    padding: 24px 28px 18px;
+    padding: 24px 32px 18px;
 }
 
 .brand {
@@ -54,16 +57,17 @@ body::before {
 .topnav {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 12px;
 }
 
 .topnav a {
     text-decoration: none;
     color: #fff;
-    padding: 12px 20px;
-    border-radius: 14px;
+    padding: 12px 24px;
+    border-radius: 40px;
     background: rgba(255, 255, 255, 0.12);
     font-weight: 600;
+    transition: all 0.25s ease;
 }
 
 .topnav a:hover,
@@ -72,41 +76,49 @@ body::before {
     color: var(--teal-dark);
 }
 
+/* ========== CONTENIDO PRINCIPAL ========== */
 .content-wrap {
-    padding: 34px 28px 38px;
+    padding: 40px 32px 48px;
 }
 
 /* ========== HERO CARD ========== */
 .hero-card {
-    background: #fff;
-    border-radius: 24px;
-    padding: 34px;
+    background: var(--card);
+    border-radius: 28px;
+    padding: 36px 40px;
     display: flex;
     justify-content: space-between;
-    gap: 22px;
+    gap: 30px;
     align-items: flex-end;
-    box-shadow: 0 10px 26px rgba(16, 27, 61, 0.08);
-    margin-bottom: 30px;
+    box-shadow: 0 12px 30px rgba(16, 27, 61, 0.1);
+    margin-bottom: 32px;
+    transition: transform 0.3s ease;
+}
+
+.hero-card:hover {
+    transform: translateY(-2px);
 }
 
 .eyebrow {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-weight: 700;
     color: var(--red);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 10px;
+    letter-spacing: 0.12em;
+    margin-bottom: 12px;
 }
 
 .hero-card h1 {
     font-size: clamp(2rem, 4vw, 3.1rem);
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    color: var(--text);
 }
 
 .hero-text {
-    max-width: 700px;
+    max-width: 650px;
     color: var(--muted);
-    line-height: 1.7;
+    line-height: 1.6;
+    font-size: 1rem;
 }
 
 .home-button {
@@ -114,8 +126,8 @@ body::before {
     justify-content: center;
     align-items: center;
     min-width: 220px;
-    padding: 14px 22px;
-    border-radius: 14px;
+    padding: 14px 28px;
+    border-radius: 40px;
     background: var(--navy);
     color: #fff;
     font-weight: 700;
@@ -125,6 +137,7 @@ body::before {
 
 .home-button:hover {
     background: var(--teal);
+    transform: translateY(-2px);
 }
 
 /* ========== BOTÓN CREAR OFERTA ========== */
@@ -138,51 +151,55 @@ body::before {
     background: linear-gradient(135deg, var(--teal), var(--teal-dark));
     color: white;
     border: none;
-    padding: 14px 28px;
-    border-radius: 30px;
-    font-weight: 600;
-    font-size: 1rem;
+    padding: 14px 32px;
+    border-radius: 40px;
+    font-weight: 700;
+    font-size: 0.95rem;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(17, 177, 173, 0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(17, 177, 173, 0.35);
 }
 
 /* ========== SECCIÓN DE OFERTAS ========== */
 .section-title {
-    font-size: 1.5rem;
-    margin-bottom: 20px;
+    font-size: 1.6rem;
+    margin-bottom: 24px;
     color: var(--text);
     border-left: 4px solid var(--teal);
-    padding-left: 15px;
+    padding-left: 18px;
 }
 
 .market-list {
     display: grid;
-    gap: 22px;
+    gap: 24px;
     margin-top: 10px;
 }
 
 /* ========== TARJETA DE OFERTA ========== */
 .offer-card {
     background: #fff;
-    border-radius: 24px;
-    padding: 26px;
+    border-radius: 28px;
+    padding: 28px 32px;
     border: 1px solid rgba(16, 27, 61, 0.06);
     box-shadow: 0 10px 26px rgba(16, 27, 61, 0.08);
-    transition: transform 0.2s;
+    transition: all 0.3s ease;
 }
 
 .offer-card:hover {
-    transform: translateY(-3px);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 35px rgba(16, 27, 61, 0.15);
 }
 
 .mi-oferta {
-    border-left: 4px solid var(--teal);
-    background: rgba(17, 177, 173, 0.02);
+    border-left: 5px solid var(--teal);
+    background: linear-gradient(135deg, #fff, rgba(17, 177, 173, 0.03));
 }
 
 .offer-user {
@@ -191,17 +208,24 @@ body::before {
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: wrap;
+    font-size: 0.95rem;
+}
+
+.offer-user strong {
+    color: var(--text);
+    font-size: 1rem;
 }
 
 .badge-mia {
     background: var(--teal);
     color: white;
-    padding: 4px 12px;
-    border-radius: 20px;
+    padding: 5px 14px;
+    border-radius: 30px;
     font-size: 0.7rem;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 /* ========== GRID DE INTERCAMBIO ========== */
@@ -209,19 +233,24 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 20px;
-    margin-bottom: 25px;
+    gap: 25px;
+    margin-bottom: 28px;
     flex-wrap: wrap;
 }
 
 .offer-box {
     flex: 1;
-    min-width: 200px;
-    padding: 25px 20px;
-    border-radius: 20px;
+    min-width: 220px;
+    padding: 28px 20px;
+    border-radius: 24px;
     text-align: center;
     background: linear-gradient(135deg, var(--teal), #37c7c3);
     color: #fff;
+    transition: transform 0.2s;
+}
+
+.offer-box:hover {
+    transform: scale(1.02);
 }
 
 .offer-box.dark {
@@ -235,10 +264,12 @@ body::before {
 
 .offer-box.rareza-sr {
     background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
 }
 
 .offer-box.rareza-r {
     background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: white;
 }
 
 .offer-label {
@@ -246,39 +277,47 @@ body::before {
     letter-spacing: 0.12em;
     font-size: 0.7rem;
     font-weight: 700;
-    opacity: 0.9;
+    opacity: 0.85;
     display: block;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 
 .offer-box strong {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     line-height: 1.3;
     display: block;
-    margin: 10px 0;
+    margin: 12px 0;
 }
 
 .offer-box small {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     opacity: 0.9;
 }
 
 .offer-arrow {
-    font-size: 32px;
+    font-size: 36px;
     font-weight: bold;
     color: var(--teal);
+    background: rgba(255, 255, 255, 0.9);
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* ========== BOTONES ========== */
 .btn-accept {
     width: 100%;
     border: none;
-    border-radius: 16px;
+    border-radius: 40px;
     padding: 14px 18px;
     background: var(--teal);
     color: #fff;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 0.95rem;
     cursor: pointer;
     transition: all 0.3s ease;
 }
@@ -286,23 +325,26 @@ body::before {
 .btn-accept:hover {
     background: var(--teal-dark);
     transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(17, 177, 173, 0.3);
 }
 
 .btn-cancel {
     width: 100%;
     border: none;
-    border-radius: 16px;
+    border-radius: 40px;
     padding: 14px 18px;
     background: #95a5a6;
     color: white;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 0.95rem;
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
 .btn-cancel:hover {
     background: var(--red);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(232, 59, 87, 0.3);
 }
 
 /* ========== MODAL ========== */
@@ -314,24 +356,37 @@ body::before {
     top: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(6px);
 }
 
 .modal-content {
     background: white;
-    margin: 5% auto;
-    padding: 30px;
-    border-radius: 24px;
+    margin: 8% auto;
+    padding: 32px;
+    border-radius: 32px;
     width: 90%;
-    max-width: 500px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 520px;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .modal-content h2 {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
     color: var(--text);
     text-align: center;
+    font-size: 1.6rem;
 }
 
 .close {
@@ -340,51 +395,59 @@ body::before {
     font-weight: bold;
     cursor: pointer;
     color: var(--muted);
-    transition: color 0.2s;
+    transition: all 0.2s;
+    line-height: 1;
 }
 
 .close:hover {
     color: var(--red);
+    transform: scale(1.1);
 }
 
+/* ========== FORMULARIO MODAL ========== */
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 22px;
 }
 
 .form-group label {
     display: block;
     margin-bottom: 8px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text);
+    font-size: 0.9rem;
 }
 
 .form-group select,
 .form-group input {
     width: 100%;
-    padding: 12px 15px;
+    padding: 12px 16px;
     border: 2px solid #e0e4e8;
-    border-radius: 12px;
-    font-size: 1rem;
+    border-radius: 16px;
+    font-size: 0.95rem;
     font-family: inherit;
-    transition: border-color 0.2s;
+    transition: all 0.2s;
+    background: white;
 }
 
 .form-group select:focus,
 .form-group input:focus {
     outline: none;
     border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(17, 177, 173, 0.1);
 }
 
 .form-hint {
     display: block;
     font-size: 0.7rem;
     color: var(--muted);
-    margin-top: 5px;
+    margin-top: 6px;
 }
 
 .btn-submit {
     width: 100%;
-    margin-top: 10px;
+    margin-top: 15px;
+    padding: 14px;
+    font-size: 1rem;
 }
 
 /* ========== TOAST ========== */
@@ -393,20 +456,21 @@ body::before {
     bottom: 30px;
     right: 30px;
     padding: 14px 24px;
-    border-radius: 12px;
+    border-radius: 16px;
     display: none;
     z-index: 1001;
     font-weight: 600;
     animation: slideIn 0.3s ease;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .toast-message.success {
-    background: #2ecc71;
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
     color: white;
 }
 
 .toast-message.error {
-    background: #e83b57;
+    background: linear-gradient(135deg, var(--red), #c0392b);
     color: white;
 }
 
@@ -421,24 +485,42 @@ body::before {
     }
 }
 
+/* ========== NO OFERTAS ========== */
 .no-offers {
     text-align: center;
-    padding: 50px;
+    padding: 60px 30px;
     color: var(--muted);
     background: white;
-    border-radius: 24px;
+    border-radius: 28px;
     font-size: 1.1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
 /* ========== RESPONSIVE ========== */
+@media (max-width: 900px) {
+    .content-wrap {
+        padding: 32px 28px 40px;
+    }
+    
+    .hero-card {
+        padding: 30px 32px;
+    }
+    
+    .offer-box strong {
+        font-size: 1.2rem;
+    }
+}
+
 @media (max-width: 760px) {
     .hero-card {
         flex-direction: column;
         align-items: flex-start;
+        gap: 20px;
     }
 
     .offer-grid {
         flex-direction: column;
+        gap: 15px;
     }
 
     .offer-box {
@@ -448,55 +530,176 @@ body::before {
 
     .offer-arrow {
         transform: rotate(90deg);
+        margin: 5px 0;
+    }
+    
+    .create-offer-container {
+        justify-content: center;
+    }
+    
+    .btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-shell {
+        width: calc(100% - 16px);
+        margin: 12px auto;
+        border-radius: 24px;
+    }
+
+    .topbar {
+        padding: 18px 20px 14px;
+    }
+
+    .brand {
+        font-size: 1.6rem;
+        margin-bottom: 14px;
+    }
+
+    .topnav a {
+        padding: 8px 18px;
+        font-size: 0.85rem;
+    }
+
+    .content-wrap {
+        padding: 28px 24px 36px;
+    }
+
+    .hero-card {
+        padding: 28px;
+        margin-bottom: 28px;
+    }
+
+    .hero-card h1 {
+        font-size: 1.8rem;
+    }
+
+    .home-button {
+        min-width: 100%;
+        text-align: center;
+        padding: 12px 20px;
+    }
+
+    .section-title {
+        font-size: 1.4rem;
+    }
+
+    .offer-card {
+        padding: 22px 24px;
+    }
+
+    .offer-box strong {
+        font-size: 1.1rem;
+    }
+    
+    .modal-content {
+        margin: 15% auto;
+        padding: 24px;
     }
 }
 
 @media (max-width: 640px) {
     .page-shell {
-        width: calc(100% - 16px);
         margin: 8px auto;
         border-radius: 20px;
     }
 
     .topbar {
-        padding: 18px 16px 14px;
+        padding: 16px 16px 12px;
     }
 
     .brand {
-        font-size: 1.5rem;
-        margin-bottom: 14px;
+        font-size: 1.4rem;
+        margin-bottom: 12px;
     }
 
-    .topnav a,
-    .home-button {
+    .topnav a {
         width: 100%;
         text-align: center;
+        padding: 10px 16px;
     }
 
     .content-wrap {
-        padding: 18px 16px 24px;
+        padding: 20px 16px 28px;
     }
 
-    .hero-card,
-    .offer-card {
+    .hero-card {
         padding: 22px;
+        margin-bottom: 24px;
+    }
+
+    .hero-card h1 {
+        font-size: 1.5rem;
+    }
+
+    .eyebrow {
+        font-size: 0.75rem;
+    }
+
+    .hero-text {
+        font-size: 0.9rem;
+    }
+
+    .section-title {
+        font-size: 1.2rem;
+        padding-left: 12px;
+    }
+
+    .offer-card {
+        padding: 18px;
+    }
+
+    .offer-user {
+        font-size: 0.85rem;
+        gap: 6px;
+    }
+
+    .offer-box {
+        padding: 18px 15px;
     }
 
     .offer-box strong {
-        font-size: 1.2rem;
+        font-size: 1rem;
     }
 
-    .create-offer-container {
-        justify-content: center;
+    .offer-label {
+        font-size: 0.6rem;
     }
 
-    .btn-primary {
-        width: 100%;
-        text-align: center;
+    .offer-arrow {
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
+    }
+
+    .btn-accept,
+    .btn-cancel {
+        padding: 12px 16px;
+        font-size: 0.85rem;
     }
 
     .modal-content {
-        margin: 20% auto;
+        margin: 25% auto;
         padding: 20px;
+    }
+
+    .modal-content h2 {
+        font-size: 1.3rem;
+    }
+
+    .form-group select,
+    .form-group input {
+        padding: 10px 14px;
+        font-size: 0.85rem;
+    }
+
+    .toast-message {
+        left: 20px;
+        right: 20px;
+        bottom: 20px;
+        text-align: center;
     }
 }

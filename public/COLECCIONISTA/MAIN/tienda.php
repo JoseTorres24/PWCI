@@ -33,7 +33,7 @@ $stmt = $conn->prepare("
     JOIN equipos eq ON j.equipo_id = eq.id
     WHERE eu.usuario_id = ?
     ORDER BY eu.jugador_id DESC
-    LIMIT 3
+    LIMIT 4
 ");
 $stmt->execute([$usuario_id]);
 $ultimas_cartas = $stmt->fetchAll();

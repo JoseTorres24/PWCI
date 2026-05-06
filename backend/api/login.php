@@ -29,7 +29,7 @@ try {
             'correo' => $user['correo'],
             'rol' => $user['rol']
         ];
-        
+        //arreglo para login diferente
         if ($user['rol'] === 'admin') {
             header("Location: /admin/dashboard");
         } else {
