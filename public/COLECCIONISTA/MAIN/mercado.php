@@ -86,7 +86,6 @@ $todos_jugadores = $stmt->fetchAll();
           <h1>Mercado de Intercambios</h1>
           <p class="hero-text">Encuentra ofertas activas y propón un intercambio para completar tu álbum.</p>
         </div>
-        <a class="home-button" href="/dashboard">Regresar al inicio</a>
       </section>
 
       <div class="create-offer-container">

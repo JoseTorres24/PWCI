@@ -233,7 +233,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['abrir_sobre_ajax'])) 
           <h1>Tienda de Sobres</h1>
           <p class="hero-text">Abre sobres y añade nuevas cartas a tu colección oficial.</p>
         </div>
-        <a class="home-button" href="/dashboard">Regresar al inicio</a>
       </section>
 
       <section class="pack-area">

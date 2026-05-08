@@ -107,7 +107,6 @@ $porcentaje = $total_album > 0 ? ($total_obtenidas / $total_album) * 100 : 0;
           <h1>Bienvenido, <?php echo htmlspecialchars($user['nombre'] ?? $_SESSION['usuario']['nombre']); ?></h1>
           <p class="hero-text">Tu colección sigue creciendo. Consulta tu progreso, revisa intercambios y abre nuevos sobres.</p>
         </div>
-        <a class="home-button" href="/">Regresar al inicio</a>
       </section>
 
       <section class="dashboard-grid">
