@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 header('Content-Type: application/json');
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/backend/config/db.php';
-
+// va recibir un string pero como no quiero tipar asi lo dejo
 function getFlagUrl($pais) {
     $codigos = [
         'México' => 'mx', 'Mexico' => 'mx',
@@ -20,7 +20,7 @@ function getFlagUrl($pais) {
     return "https://flagpedia.net/data/flags/icon/72x54/{$codigo}.png";
 }
 
-// Cache simple en sesión para evitar múltiples llamadas
+// Cache simple en sesión para evitar multiples llamadas, falla la wea
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pais = $_GET['pais'] ?? '';
     
