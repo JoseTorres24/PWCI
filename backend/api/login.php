@@ -1,11 +1,12 @@
 <?php
+session_start();
+
 require_once $_SERVER['DOCUMENT_ROOT'] . '/backend/config/db.php';
 
-$db = new Database();
-$conn = $db->connect();
+header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: /acceso");
+    echo json_encode(['error' => 'Método no permitido']);
     exit;
 }
 
@@ -13,35 +14,36 @@ $correo = trim($_POST['correo'] ?? '');
 $password = $_POST['password'] ?? '';
 
 if (empty($correo) || empty($password)) {
-    header("Location: /acceso?error=campos");
+    echo json_encode(['error' => 'Todos los campos son obligatorios']);
     exit;
 }
 
 try {
-    $stmt = $conn->prepare("SELECT * FROM usuarios WHERE correo = ?");
-    $stmt->execute([$correo]);
-    $user = $stmt->fetch();
+    $db = new Database();
+    $conn = $db->connect();
     
-    if ($user && password_verify($password, $user['password'])) {
+    $stmt = $conn->prepare("SELECT id, nombre, correo, password, rol FROM usuarios WHERE correo = ?");
+    $stmt->execute([$correo]);
+    $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($usuario && password_verify($password, $usuario['password'])) {
         $_SESSION['usuario'] = [
-            'id' => $user['id'],
-            'nombre' => $user['nombre'],
-            'correo' => $user['correo'],
-            'rol' => $user['rol']
+            'id' => $usuario['id'],
+            'nombre' => $usuario['nombre'],
+            'correo' => $usuario['correo'],
+            'rol' => $usuario['rol']
         ];
-        //arreglo para login diferente
-        if ($user['rol'] === 'admin') {
-            header("Location: /admin/dashboard");
-        } else {
-            header("Location: /dashboard");
-        }
-        exit;
+        
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Login exitoso', 
+            'rol' => $usuario['rol']
+        ]);
     } else {
-        header("Location: /acceso?error=login");
-        exit;
+        echo json_encode(['error' => 'Correo o contraseña incorrectos']);
     }
+    
 } catch (PDOException $e) {
-    header("Location: /acceso?error=bd");
-    exit;
+    echo json_encode(['error' => 'Error en la base de datos: ' . $e->getMessage()]);
 }
 ?>

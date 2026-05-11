@@ -6,29 +6,306 @@ if (isset($_SESSION['usuario']) && $_SESSION['usuario']['rol'] === 'admin') {
     header('Location: /admin/dashboard');
     exit;
 }
+
+// Si hay un mensaje de error en la sesión, mostrarlo
+$error = $_SESSION['login_error'] ?? null;
+unset($_SESSION['login_error']);
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Admin Login - Mundial 2026</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="/ADMIN/adminCSS.css">
+    <meta charset="UTF-8">
+    <title>Admin Login - Mundial 2026</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 32px;
+            padding: 48px 40px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-logo {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #08b8b3, #069792);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(8, 184, 179, 0.3);
+        }
+
+        .login-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .login-card h2 {
+            color: #163049;
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .login-card p {
+            color: #46637a;
+            font-size: 0.9rem;
+            margin-bottom: 32px;
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #163049;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 16px 20px;
+            font-size: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #08b8b3;
+            box-shadow: 0 0 0 3px rgba(8, 184, 179, 0.1);
+            background: white;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #08b8b3, #069792);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(8, 184, 179, 0.3);
+        }
+
+        .login-footer {
+            margin-top: 28px;
+            font-size: 0.75rem;
+            color: #46637a;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 20px;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #f12b4d, #c0392b);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            text-align: center;
+            animation: shake 0.3s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .toast-message {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 14px 24px;
+            border-radius: 16px;
+            display: none;
+            z-index: 1000;
+            font-weight: 600;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .toast-message.success {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+        }
+
+        .toast-message.error {
+            background: linear-gradient(135deg, #f12b4d, #c0392b);
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .login-card {
+                padding: 32px 24px;
+            }
+            
+            .input-group input {
+                padding: 14px 16px;
+            }
+            
+            .toast-message {
+                left: 20px;
+                right: 20px;
+                bottom: 20px;
+                text-align: center;
+            }
+        }
+    </style>
 </head>
 <body>
-
-<div class="login-container" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#163049,#0a1a2e);">
-    <div class="login-card" style="background:white;padding:40px;border-radius:28px;width:100%;max-width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-        <h2 style="color:#163049;margin-bottom:10px;">Panel de Administración</h2>
-        <p style="color:#46637a;margin-bottom:25px;">Ingresa tus credenciales para acceder</p>
-        
-        <form method="POST" action="/backend/api/login.php">
-            <input type="email" name="correo" placeholder="Correo electrónico" required style="width:100%;padding:12px;margin-bottom:15px;border:1px solid #ddd;border-radius:12px;">
-            <input type="password" name="password" placeholder="Contraseña" required style="width:100%;padding:12px;margin-bottom:15px;border:1px solid #ddd;border-radius:12px;">
-            <button type="submit" style="width:100%;padding:12px;background:#08b8b3;color:white;border:none;border-radius:12px;font-weight:700;cursor:pointer;">Ingresar como Admin</button>
-        </form>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-logo">
+                <img src="/ASSETS/FIFAlogocopa.jpeg" alt="ADMIN">
+            </div>
+            <h2>Panel de Administración</h2>
+            <p>Ingresa tus credenciales para acceder al sistema</p>
+            
+            <?php if ($error): ?>
+                <div class="error-message">
+                    <?php echo htmlspecialchars($error); ?>
+                </div>
+            <?php endif; ?>
+            
+            <form method="POST" action="/backend/api/login.php" id="loginForm">
+                <div class="input-group">
+                    <label>Correo electrónico</label>
+                    <input type="email" name="correo" placeholder="admin@mundial2026.com" required autocomplete="email">
+                </div>
+                
+                <div class="input-group">
+                    <label>Contraseña</label>
+                    <input type="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                
+                <button type="submit" class="login-btn">Ingresar al Panel</button>
+            </form>
+            
+            <div class="login-footer">
+                <p>Solo personal autorizado</p>
+            </div>
+        </div>
     </div>
-</div>
-
+    
+    <div id="toastMessage" class="toast-message"></div>
+    
+    <script>
+        // Prevenir reenvío de formulario al recargar
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
+        }
+        
+        document.getElementById('loginForm').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const btn = document.querySelector('.login-btn');
+            const originalText = btn.textContent;
+            
+            btn.textContent = 'Verificando...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/backend/api/login.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.success && data.rol === 'admin') {
+                    showToast('Acceso concedido, redirigiendo...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/admin/dashboard';
+                    }, 1000);
+                } else {
+                    showToast('Acceso denegado. Credenciales incorrectas o no eres administrador', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error al conectar con el servidor', 'error');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        };
+        
+        function showToast(message, type) {
+            const toast = document.getElementById('toastMessage');
+            toast.textContent = message;
+            toast.className = `toast-message ${type}`;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 4000);
+        }
+    </script>
 </body>
-</html>
+</html> 
