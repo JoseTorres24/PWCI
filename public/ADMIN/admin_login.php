@@ -19,6 +19,7 @@ unset($_SESSION['login_error']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        /* Tus estilos existentes... */
         * {
             margin: 0;
             padding: 0;
@@ -159,13 +160,6 @@ unset($_SESSION['login_error']);
             margin-bottom: 20px;
             font-size: 0.85rem;
             text-align: center;
-            animation: shake 0.3s ease;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
         }
 
         .toast-message {
@@ -192,31 +186,14 @@ unset($_SESSION['login_error']);
         }
 
         @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
         @media (max-width: 640px) {
-            .login-card {
-                padding: 32px 24px;
-            }
-            
-            .input-group input {
-                padding: 14px 16px;
-            }
-            
-            .toast-message {
-                left: 20px;
-                right: 20px;
-                bottom: 20px;
-                text-align: center;
-            }
+            .login-card { padding: 32px 24px; }
+            .input-group input { padding: 14px 16px; }
+            .toast-message { left: 20px; right: 20px; bottom: 20px; text-align: center; }
         }
     </style>
 </head>
@@ -230,20 +207,18 @@ unset($_SESSION['login_error']);
             <p>Ingresa tus credenciales para acceder al sistema</p>
             
             <?php if ($error): ?>
-                <div class="error-message">
-                    <?php echo htmlspecialchars($error); ?>
-                </div>
+                <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
             
-            <form method="POST" action="/backend/api/login.php" id="loginForm">
+            <form id="adminLoginForm">
                 <div class="input-group">
                     <label>Correo electrónico</label>
-                    <input type="email" name="correo" placeholder="admin@mundial2026.com" required autocomplete="email">
+                    <input type="email" id="adminEmail" name="correo" placeholder="admin@mundial2026.com" required autocomplete="email">
                 </div>
                 
                 <div class="input-group">
                     <label>Contraseña</label>
-                    <input type="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+                    <input type="password" id="adminPassword" name="password" placeholder="••••••••" required autocomplete="current-password">
                 </div>
                 
                 <button type="submit" class="login-btn">Ingresar al Panel</button>
@@ -258,38 +233,48 @@ unset($_SESSION['login_error']);
     <div id="toastMessage" class="toast-message"></div>
     
     <script>
-        // Prevenir reenvío de formulario al recargar
         if (window.history.replaceState) {
             window.history.replaceState(null, null, window.location.href);
         }
         
-        document.getElementById('loginForm').onsubmit = async (e) => {
+        document.getElementById('adminLoginForm').onsubmit = async (e) => {
             e.preventDefault();
             
-            const formData = new FormData(e.target);
+            const correo = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+            
+            const formData = new URLSearchParams();
+            formData.append('correo', correo);
+            formData.append('password', password);
+            
             const btn = document.querySelector('.login-btn');
             const originalText = btn.textContent;
-            
             btn.textContent = 'Verificando...';
             btn.disabled = true;
             
             try {
                 const response = await fetch('/backend/api/login.php', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData.toString()
                 });
                 const data = await response.json();
                 
-                if (data.success && data.rol === 'admin') {
-                    showToast('Acceso concedido, redirigiendo...', 'success');
-                    setTimeout(() => {
-                        window.location.href = '/admin/dashboard';
-                    }, 1000);
+                if (data.success) {
+                    if (data.rol === 'admin') {
+                        showToast('Acceso concedido, redirigiendo...', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/admin/dashboard';
+                        }, 1000);
+                    } else {
+                        showToast('Acceso denegado. Esta área es solo para administradores', 'error');
+                    }
                 } else {
-                    showToast('Acceso denegado. Credenciales incorrectas o no eres administrador', 'error');
+                    showToast((data.error || 'Credenciales incorrectas'), 'error');
                 }
             } catch (error) {
-                console.error('Error:', error);
                 showToast('Error al conectar con el servidor', 'error');
             } finally {
                 btn.textContent = originalText;
@@ -308,4 +293,4 @@ unset($_SESSION['login_error']);
         }
     </script>
 </body>
-</html> 
+</html>
