@@ -1,12 +1,10 @@
 <?php
-session_start();
 
 // Verificar que sea admin
 if (!isset($_SESSION['usuario']) || $_SESSION['usuario']['rol'] !== 'admin') {
     header('Location: /admin/login');
     exit;
 }
-
 require_once $_SERVER['DOCUMENT_ROOT'] . '/backend/config/db.php';
 $db = new Database();
 $conn = $db->connect();
