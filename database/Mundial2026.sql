@@ -778,6 +778,87 @@ BEGIN
 END$$
 DELIMITER ;
 
+-- ============================================
+-- SP_ELIMINAR_EQUIPO_SEGURO
+-- Elimina un equipo verificando que no tenga jugadores asociados
+-- ============================================
+
+DROP PROCEDURE IF EXISTS SP_ELIMINAR_EQUIPO_SEGURO;
+
+DELIMITER $$
+CREATE PROCEDURE SP_ELIMINAR_EQUIPO_SEGURO(
+    IN p_id INT,
+    OUT p_success TINYINT,
+    OUT p_mensaje VARCHAR(255)
+)
+BEGIN
+    DECLARE v_total_jugadores INT;
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SET p_success = 0;
+        SET p_mensaje = 'Error al eliminar el equipo';
+        ROLLBACK;
+    END;
+    
+    START TRANSACTION;
+    
+    -- Verificar si el equipo tiene jugadores asociados
+    SELECT COUNT(*) INTO v_total_jugadores FROM jugadores WHERE equipo_id = p_id;
+    
+    IF v_total_jugadores > 0 THEN
+        SET p_success = 0;
+        SET p_mensaje = CONCAT('No se puede eliminar el equipo porque tiene ', v_total_jugadores, ' jugadores asociados');
+        ROLLBACK;
+    ELSE
+        DELETE FROM equipos WHERE id = p_id;
+        SET p_success = 1;
+        SET p_mensaje = 'Equipo eliminado exitosamente';
+        COMMIT;
+    END IF;
+END$$
+DELIMITER ;
+
+-- ============================================
+-- SP_ELIMINAR_JUGADOR_SEGURO
+-- Elimina un jugador verificando que no esté en colecciones
+-- ============================================
+DROP PROCEDURE IF EXISTS SP_ELIMINAR_JUGADOR_SEGURO;
+
+DELIMITER $$
+CREATE PROCEDURE SP_ELIMINAR_JUGADOR_SEGURO(
+    IN p_id INT,
+    OUT p_success TINYINT,
+    OUT p_mensaje VARCHAR(255)
+)
+BEGIN
+    DECLARE v_total_colecciones INT;
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SET p_success = 0;
+        SET p_mensaje = 'Error al eliminar el jugador';
+        ROLLBACK;
+    END;
+    
+    START TRANSACTION;
+    
+    -- Verificar si el jugador está en alguna colección
+    SELECT COUNT(*) INTO v_total_colecciones FROM estampas_usuario WHERE jugador_id = p_id;
+    
+    IF v_total_colecciones > 0 THEN
+        SET p_success = 0;
+        SET p_mensaje = CONCAT('No se puede eliminar el jugador porque está en ', v_total_colecciones, ' colecciones');
+        ROLLBACK;
+    ELSE
+        -- Eliminar de sobre_jugadores primero
+        DELETE FROM sobre_jugadores WHERE jugador_id = p_id;
+        -- Eliminar jugador
+        DELETE FROM jugadores WHERE id = p_id;
+        SET p_success = 1;
+        SET p_mensaje = 'Jugador eliminado exitosamente';
+        COMMIT;
+    END IF;
+END$$
+DELIMITER ;
 
 -- ============================================
 -- Verificar que los SP se crearon

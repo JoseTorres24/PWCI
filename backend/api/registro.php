@@ -24,8 +24,42 @@ if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-if (strlen($password) < 6) {
-    echo json_encode(['error' => 'La contraseña debe tener al menos 6 caracteres']);
+// Validación de contraseña mejorada
+function validarPassword($password) {
+    $errores = [];
+    
+    
+    if (strlen($password) < 7) {
+        $errores[] = 'La contraseña debe tener al menos 7 caracteres';
+    }
+    
+    
+    if (!preg_match('/[A-Z]/', $password)) {
+        $errores[] = 'La contraseña debe contener al menos una letra mayúscula';
+    }
+    
+    
+    if (!preg_match('/[a-z]/', $password)) {
+        $errores[] = 'La contraseña debe contener al menos una letra minúscula';
+    }
+    
+    
+    if (!preg_match('/[0-9]/', $password)) {
+        $errores[] = 'La contraseña debe contener al menos un número';
+    }
+    
+    
+    if (!preg_match('/[!@#$%^&*()\-_=+\[\]{};:,.?\/]/', $password)) {
+        $errores[] = 'La contraseña debe contener al menos un carácter especial (!@#$%^&*() etc.)';
+    }
+    
+    return $errores;
+}
+
+// Uso en el registro
+$errores = validarPassword($password);
+if (!empty($errores)) {
+    echo json_encode(['error' => implode('. ', $errores)]);
     exit;
 }
 

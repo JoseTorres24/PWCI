@@ -33,15 +33,44 @@ if (empty($password_actual) || empty($password_nueva) || empty($password_confirm
 }
 
 
-if (strlen($password_nueva) < 6) {
-    header("Location: /perfil?error=password_short");
+$password_errores = [];
+
+
+if (strlen($password_nueva) < 7) {
+    $password_errores[] = 'La contraseña debe tener al menos 7 caracteres';
+}
+
+
+if (!preg_match('/[A-Z]/', $password_nueva)) {
+    $password_errores[] = 'Debe contener al menos una letra mayúscula';
+}
+
+
+if (!preg_match('/[a-z]/', $password_nueva)) {
+    $password_errores[] = 'Debe contener al menos una letra minúscula';
+}
+
+
+if (!preg_match('/[0-9]/', $password_nueva)) {
+    $password_errores[] = 'Debe contener al menos un número';
+}
+
+
+if (!preg_match('/[!@#$%^&*()\-_=+\[\]{};:,.?\/]/', $password_nueva)) {
+    $password_errores[] = 'Debe contener al menos un carácter especial (!@#$%^&* etc.)';
+}
+
+
+if ($password_nueva !== $password_confirmar) {
+    $password_errores[] = 'Las contraseñas nuevas no coinciden';
+}
+
+if (!empty($password_errores)) {
+    $error_msg = implode('; ', $password_errores);
+    header("Location: /perfil?error=password_invalid&msg=" . urlencode($error_msg));
     exit;
 }
 
-if ($password_nueva !== $password_confirmar) {
-    header("Location: /perfil?error=password_mismatch");
-    exit;
-}
 
 try {
     $stmt = $conn->prepare("SELECT password FROM usuarios WHERE id = ?");
