@@ -22,23 +22,27 @@ try {
     $db = new Database();
     $conn = $db->connect();
     
-    $stmt = $conn->prepare("SELECT id, nombre, correo, password, rol FROM usuarios WHERE correo = ?");
+    // ========== USAR SP_LOGIN ==========
+    $stmt = $conn->prepare("CALL SP_LOGIN(?, @p_id, @p_nombre, @p_rol, @p_password_hash, @p_success)");
     $stmt->execute([$correo]);
-    $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if ($usuario && password_verify($password, $usuario['password'])) {
+    // Obtener los valores de salida
+    $stmt = $conn->query("SELECT @p_id as id, @p_nombre as nombre, @p_rol as rol, @p_password_hash as password_hash, @p_success as success");
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt->nextRowset(); // Limpiar resultados
+    
+    if ($result['success'] == 1 && password_verify($password, $result['password_hash'])) {
         $_SESSION['usuario'] = [
-            'id' => $usuario['id'],
-            'nombre' => $usuario['nombre'],
-            'correo' => $usuario['correo'],
-            'rol' => $usuario['rol']
+            'id' => $result['id'],
+            'nombre' => $result['nombre'],
+            'correo' => $correo,
+            'rol' => $result['rol']
         ];
         
-        // Devolver el rol para que el frontend sepa a dónde redirigir
         echo json_encode([
             'success' => true, 
             'message' => 'Login exitoso', 
-            'rol' => $usuario['rol']
+            'rol' => $result['rol']
         ]);
     } else {
         echo json_encode(['error' => 'Correo o contraseña incorrectos']);

@@ -88,11 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['abrir_sobre_ajax'])) 
     
     // Guardar las cartas obtenidas
     foreach ($cartas_obtenidas as $carta) {
-        $stmt = $conn->prepare("
-            INSERT INTO estampas_usuario (usuario_id, jugador_id, cantidad) 
-            VALUES (?, ?, 1)
-            ON DUPLICATE KEY UPDATE cantidad = cantidad + 1
-        ");
+        $stmt = $conn->prepare("CALL SP_GUARDAR_CARTAS_OBTENIDAS(?, ?, 1)");
         $stmt->execute([$usuario_id, $carta['id']]);
     }
     

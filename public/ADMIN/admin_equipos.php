@@ -9,18 +9,40 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/backend/config/db.php';
 $db = new Database();
 $conn = $db->connect();
 
-// Procesar formulario de creación
+// Procesar formulario de creación CON IMAGEN
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['crear_equipo'])) {
     $nombre = trim($_POST['nombre']);
     $grupo = trim($_POST['grupo']);
-    $escudo = trim($_POST['escudo']);
     
     if (!empty($nombre) && !empty($grupo)) {
+        // Procesar imagen si se subió
+        $escudo_blob = null;
+        if (isset($_FILES['escudo']) && $_FILES['escudo']['error'] === UPLOAD_ERR_OK) {
+            $allowed = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime_type = finfo_file($finfo, $_FILES['escudo']['tmp_name']);
+            finfo_close($finfo);
+            
+            if (in_array($mime_type, $allowed)) {
+                $escudo_blob = file_get_contents($_FILES['escudo']['tmp_name']);
+            }
+        }
+        
         $stmt = $conn->prepare("INSERT INTO equipos (nombre, grupo, escudo) VALUES (?, ?, ?)");
-        $stmt->execute([$nombre, $grupo, $escudo]);
+        $stmt->bindParam(1, $nombre);
+        $stmt->bindParam(2, $grupo);
+        $stmt->bindParam(3, $escudo_blob, PDO::PARAM_LOB);
+        $stmt->execute();
         header('Location: /admin/equipos?success=creado');
         exit;
     }
+}
+
+if (isset($_GET['editar_escudo'])) {
+    $id = $_GET['editar_escudo'];
+    // Redirigir a página de edición
+    header("Location: /admin/editar_equipo?id=$id");
+    exit;
 }
 
 // Procesar eliminación
@@ -72,7 +94,6 @@ $equipos = $conn->query("SELECT * FROM equipos ORDER BY nombre")->fetchAll();
         border-radius: 30px;
         font-size: 0.9rem;
         outline: none;
-        transition: all 0.3s;
     }
     .search-box input:focus {
         border-color: var(--turquesa);
@@ -90,7 +111,6 @@ $equipos = $conn->query("SELECT * FROM equipos ORDER BY nombre")->fetchAll();
         cursor: pointer;
         font-size: 0.85rem;
         font-weight: 600;
-        outline: none;
     }
     .stats-badge {
         background: linear-gradient(135deg, var(--turquesa), var(--turquesa-oscuro));
@@ -101,30 +121,13 @@ $equipos = $conn->query("SELECT * FROM equipos ORDER BY nombre")->fetchAll();
         font-size: 0.85rem;
         white-space: nowrap;
     }
-    .table-wrap {
-        overflow-x: auto;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    th, td {
-        padding: 12px 15px;
-        text-align: left;
-        border-bottom: 1px solid #e2e8f0;
-    }
-    th {
-        background: linear-gradient(135deg, var(--turquesa), var(--turquesa-oscuro));
-        color: white;
-        cursor: pointer;
-        user-select: none;
-    }
-    th:hover {
-        opacity: 0.9;
-    }
-    tr:hover td {
-        background: #f8fafc;
-    }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 20px; overflow: hidden; }
+    th { background: linear-gradient(135deg, var(--turquesa), var(--turquesa-oscuro)); color: white; padding: 12px; }
+    td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
+    tr:hover td { background: #f8fafc; }
+    .team-escudo { width: 50px; height: 40px; object-fit: cover; border-radius: 8px; background: #f0f0f0; }
+    .btn-escudo { padding: 4px 8px; font-size: 0.7rem; background: #3498db; color: white; border: none; border-radius: 12px; cursor: pointer; text-decoration: none; display: inline-block; }
 </style>
 </head>
 <body>
@@ -137,6 +140,7 @@ $equipos = $conn->query("SELECT * FROM equipos ORDER BY nombre")->fetchAll();
       <a href="/admin/dashboard">Panel Principal</a>
       <a href="/admin/jugadores">Gestionar Jugadores</a>
       <a href="/admin/equipos" class="activo">Gestionar Equipos</a>
+      <a href="/admin/gestion_usuarios">Gestion Usuarios</a>
       <a href="/admin/logout" class="salir">Cerrar sesión</a>
     </nav>
   </div>
@@ -155,7 +159,7 @@ $equipos = $conn->query("SELECT * FROM equipos ORDER BY nombre")->fetchAll();
       <h2>Registrar Equipo</h2>
     </div>
 
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
       <div class="campo">
         <label>Nombre del País</label>
         <input type="text" name="nombre" required>
@@ -168,8 +172,9 @@ $equipos = $conn->query("SELECT * FROM equipos ORDER BY nombre")->fetchAll();
         </select>
       </div>
       <div class="campo-completo">
-        <label>URL del Escudo</label>
-        <input type="text" name="escudo" placeholder="/ASSETS/escudos/ejemplo.png">
+        <label>📸 Escudo del Equipo</label>
+        <input type="file" name="escudo" accept="image/*">
+        <small>Formatos: JPG, PNG, GIF, WEBP. Tamaño máximo: 2MB</small>
       </div>
       <div class="form-acciones">
         <button type="submit" name="crear_equipo">Guardar Equipo</button>
@@ -180,10 +185,9 @@ $equipos = $conn->query("SELECT * FROM equipos ORDER BY nombre")->fetchAll();
   <section class="card-panel">
     <h2>Equipos Registrados</h2>
     
-    <!-- Barra de filtros -->
     <div class="filters-bar">
       <div class="search-box">
-        <input type="text" id="searchEquipo" placeholder="🔍 Buscar equipo...">
+        <input type="text" id="searchEquipo" placeholder="Buscar equipo...">
       </div>
       <div class="filter-group">
         <select id="filterGrupo" class="filter-select">
@@ -202,7 +206,7 @@ $equipos = $conn->query("SELECT * FROM equipos ORDER BY nombre")->fetchAll();
     <div class="table-wrap">
       <table id="tablaEquipos">
         <thead>
-          <tr><th data-col="id">ID</th><th data-col="nombre">País</th><th data-col="grupo">Grupo</th><th>Escudo</th><th>Acciones</th></tr>
+          <tr><th>ID</th><th>País</th><th>Grupo</th><th>Escudo</th><th>Acciones</th></tr>
         </thead>
         <tbody>
           <?php foreach ($equipos as $equipo): ?>
@@ -210,10 +214,13 @@ $equipos = $conn->query("SELECT * FROM equipos ORDER BY nombre")->fetchAll();
             <td><?php echo $equipo['id']; ?></td>
             <td><?php echo htmlspecialchars($equipo['nombre']); ?></td>
             <td><?php echo $equipo['grupo']; ?></td>
-            <td><?php echo htmlspecialchars($equipo['escudo']); ?></td>
             <td>
-              <a href="/admin/editar_equipo?id=<?php echo $equipo['id']; ?>"><button type="button">Editar</button></a>
-              <a href="?eliminar=<?php echo $equipo['id']; ?>" onclick="return confirm('¿Eliminar equipo?')"><button type="button">Eliminar</button></a>
+              <img src="/backend/api/obtener_imagen.php?tipo=equipo&id=<?php echo $equipo['id']; ?>" class="team-escudo" 
+                   onerror="this.src='/ASSETS/escudos/default.png'">
+            </td>
+            <td>
+              <a href="/admin/editar_equipo?id=<?php echo $equipo['id']; ?>"><button type="button">✏️ Editar</button></a>
+              <a href="?eliminar=<?php echo $equipo['id']; ?>" onclick="return confirm('¿Eliminar equipo?')"><button type="button">🗑️ Eliminar</button></a>
             </td>
           </tr>
           <?php endforeach; ?>
@@ -235,36 +242,20 @@ $equipos = $conn->query("SELECT * FROM equipos ORDER BY nombre")->fetchAll();
     
     function actualizarFiltros() {
         let visibles = 0;
-        
         filas.forEach(fila => {
             const nombre = fila.dataset.nombre || '';
             const grupo = fila.dataset.grupo || '';
-            
             const coincideBusqueda = nombre.includes(busquedaActual.toLowerCase());
             const coincideGrupo = filtroGrupoActual === 'todos' || grupo === filtroGrupoActual;
-            
-            if (coincideBusqueda && coincideGrupo) {
-                fila.style.display = '';
-                visibles++;
-            } else {
-                fila.style.display = 'none';
-            }
+            fila.style.display = (coincideBusqueda && coincideGrupo) ? '' : 'none';
+            if (coincideBusqueda && coincideGrupo) visibles++;
         });
-        
         equiposMostradosSpan.textContent = visibles;
         equiposTotalSpan.textContent = filas.length;
     }
     
-    searchInput.addEventListener('input', (e) => {
-        busquedaActual = e.target.value;
-        actualizarFiltros();
-    });
-    
-    filterGrupo.addEventListener('change', (e) => {
-        filtroGrupoActual = e.target.value;
-        actualizarFiltros();
-    });
-    
+    searchInput.addEventListener('input', (e) => { busquedaActual = e.target.value; actualizarFiltros(); });
+    filterGrupo.addEventListener('change', (e) => { filtroGrupoActual = e.target.value; actualizarFiltros(); });
     equiposTotalSpan.textContent = filas.length;
     equiposMostradosSpan.textContent = filas.length;
 </script>

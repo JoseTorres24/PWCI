@@ -50,7 +50,8 @@ if (file_exists($staticFile) && is_file($staticFile)) {
         exit;
     }
 }
-// ========== RUTAS DEL ADMIN ==========
+// ========== RUTAS DEL ADMIN ========== 
+// estas rutas las definimos en un arreglo para el movimiento de este
 $adminRoutes = [
     'admin' => 'public/ADMIN/admin_dashboard.php',
     'admin/dashboard' => 'public/ADMIN/admin_dashboard.php',
@@ -58,6 +59,7 @@ $adminRoutes = [
     'admin/jugadores' => 'public/ADMIN/admin_jugadores.php',
     'admin/editar_equipo' => 'public/ADMIN/admin_editar_equipo.php',
     'admin/editar_jugador' => 'public/ADMIN/admin_editar_jugador.php',
+    'admin/gestion_usuarios' =>'public/ADMIN/admin_gestion_usuarios.php', // anota esto para despues
     'admin/login' => 'public/ADMIN/admin_login.php',
     'admin/logout' => 'public/ADMIN/admin_logout.php',
 ];

@@ -167,7 +167,7 @@ $jugadores = $stmt->fetchAll();
 
             <div class="filters-bar">
                 <div class="search-player">
-                    <input type="text" id="searchJugador" placeholder="🔍 Buscar jugador...">
+                    <input type="text" id="searchJugador" placeholder="Buscar jugador...">
                 </div>
                 <div class="filter-group">
                     <select id="rarezaSelect" class="filter-select">
@@ -199,9 +199,10 @@ $jugadores = $stmt->fetchAll();
                         <?php if (!$jugador['obtenida']): ?>
                             <div class="faltante-overlay">Carta no obtenida</div>
                         <?php endif; ?>
-                        <!-- MISMA LÓGICA QUE TIENDA.PHP -->
-                        <img src="<?php echo $jugador['foto'] ?: '/Jugadores/silueta.png'; ?>" 
-                             alt="<?php echo htmlspecialchars($jugador['nombre']); ?>">
+                        <!-- USAR ENDPOINT PARA OBTENER IMAGEN DESDE BLOB -->
+                        <img src="/backend/api/obtener_imagen.php?tipo=jugador&id=<?php echo $jugador['id']; ?>" 
+                             alt="<?php echo htmlspecialchars($jugador['nombre']); ?>"
+                             onerror="this.src='/Jugadores/silueta.png'">
                         <div class="product-overlay">
                             <div class="overlay">
                                 <?php if ($jugador['obtenida']): ?>

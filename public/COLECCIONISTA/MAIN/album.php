@@ -15,34 +15,19 @@ $conn = $db->connect();
 
 $usuario_id = $_SESSION['usuario']['id'];
 
-// Obtener todos los equipos con su progreso
-$stmt = $conn->prepare("SELECT id, nombre, grupo, escudo FROM equipos ORDER BY nombre");
+// ========== USAR SP_OBTENER_PROGRESO_ALBUM ==========
+$stmt = $conn->prepare("CALL SP_OBTENER_PROGRESO_ALBUM(?)");
+$stmt->execute([$usuario_id]);
+$todos_equipos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt->nextRowset(); // Limpiar resultados
+
+// ========== USAR SP_OBTENER_GRUPOS ==========
+$stmt = $conn->prepare("CALL SP_OBTENER_GRUPOS()");
 $stmt->execute();
-$todos_equipos = $stmt->fetchAll();
+$grupos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt->nextRowset(); // Limpiar resultados
 
-foreach ($todos_equipos as $key => $equipo) {
-    $stmt = $conn->prepare("
-        SELECT COUNT(DISTINCT j.id) as total_jugadores,
-               COUNT(CASE WHEN eu.usuario_id IS NOT NULL THEN 1 END) as obtenidas
-        FROM jugadores j
-        LEFT JOIN estampas_usuario eu ON j.id = eu.jugador_id AND eu.usuario_id = ?
-        WHERE j.equipo_id = ?
-    ");
-    $stmt->execute([$usuario_id, $equipo['id']]);
-    $stats = $stmt->fetch();
-    
-    $todos_equipos[$key]['total_jugadores'] = $stats['total_jugadores'] ?? 0;
-    $todos_equipos[$key]['obtenidas'] = $stats['obtenidas'] ?? 0;
-    $todos_equipos[$key]['progreso'] = $todos_equipos[$key]['total_jugadores'] > 0 ? 
-                          ($todos_equipos[$key]['obtenidas'] / $todos_equipos[$key]['total_jugadores']) * 100 : 0;
-}
-
-// Obtener grupos únicos para filtros
-$stmt = $conn->prepare("SELECT DISTINCT grupo FROM equipos ORDER BY grupo");
-$stmt->execute();
-$grupos = $stmt->fetchAll();
-
-// Pre-cargar todas las banderas de una sola vez (una sola llamada a la API externa)
+// Pre-cargar todas las banderas de una sola vez (API externa)
 function obtenerTodasLasBanderas($equipos) {
     $banderas = [];
     foreach ($equipos as $equipo) {
@@ -209,7 +194,7 @@ $banderas_precargadas = obtenerTodasLasBanderas($todos_equipos);
           <button class="carousel-btn next" id="nextBtn">❯</button>
         </div>
         <div id="noResults" class="no-results" style="display: none;">
-          🏟️ No se encontraron equipos con esa búsqueda o filtro.
+          No se encontraron equipos con esa búsqueda o filtro.
         </div>
       </section>
     </main>

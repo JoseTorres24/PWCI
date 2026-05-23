@@ -1,64 +1,67 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/backend/config/db.php';
+session_start();
 
-$db = new Database();
-$conn = $db->connect();
+require_once __DIR__ . '/../config/db.php';
 
-// Verificar si es POST
+header('Content-Type: application/json');
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: /acceso");
+    echo json_encode(['error' => 'Método no permitido']);
     exit;
 }
 
-// Obtener datos
 $nombre = trim($_POST['nombre'] ?? '');
 $correo = trim($_POST['correo'] ?? '');
 $password = $_POST['password'] ?? '';
 
-// Validaciones
 if (empty($nombre) || empty($correo) || empty($password)) {
-    header("Location: /acceso?error=campos");
+    echo json_encode(['error' => 'Todos los campos son obligatorios']);
     exit;
 }
 
 if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
-    header("Location: /acceso?error=correo");
+    echo json_encode(['error' => 'Correo electrónico inválido']);
     exit;
 }
 
 if (strlen($password) < 6) {
-    header("Location: /acceso?error=password");
+    echo json_encode(['error' => 'La contraseña debe tener al menos 6 caracteres']);
     exit;
 }
 
 try {
-    // Verificar si el correo ya existe
-    $stmt = $conn->prepare("SELECT id FROM usuarios WHERE correo = ?");
-    $stmt->execute([$correo]);
+    $db = new Database();
+    $conn = $db->connect();
     
-    if ($stmt->fetch()) {
-        header("Location: /acceso?error=existe");
-        exit;
-    }
-    
-    // Crear usuario
     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-    $stmt = $conn->prepare("INSERT INTO usuarios (nombre, correo, password, rol) VALUES (?, ?, ?, 'coleccionista')");
+    
+    // ========== USAR SP_REGISTRO ==========
+    $stmt = $conn->prepare("CALL SP_REGISTRO(?, ?, ?, @p_usuario_id, @p_success, @p_mensaje)");
     $stmt->execute([$nombre, $correo, $passwordHash]);
     
-    // Iniciar sesión automáticamente
-    $_SESSION['usuario'] = [
-        'id' => $conn->lastInsertId(),
-        'nombre' => $nombre,
-        'correo' => $correo,
-        'rol' => 'coleccionista'
-    ];
+    // Obtener los valores de salida
+    $stmt = $conn->query("SELECT @p_usuario_id as usuario_id, @p_success as success, @p_mensaje as mensaje");
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt->nextRowset(); // Limpiar resultados
     
-    header("Location: /dashboard?registro=exitoso");
-    exit;
+    if ($result['success'] == 1) {
+        $_SESSION['usuario'] = [
+            'id' => $result['usuario_id'],
+            'nombre' => $nombre,
+            'correo' => $correo,
+            'rol' => 'coleccionista'
+        ];
+        
+        echo json_encode([
+            'success' => true, 
+            'message' => $result['mensaje'],
+            'rol' => 'coleccionista'
+        ]);
+    } else {
+        echo json_encode(['error' => $result['mensaje']]);
+    }
     
 } catch (PDOException $e) {
-    header("Location: /acceso?error=bd");
-    exit;
+    echo json_encode(['error' => 'Error en la base de datos: ' . $e->getMessage()]);
 }
 ?>

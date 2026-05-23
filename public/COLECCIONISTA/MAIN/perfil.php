@@ -20,45 +20,30 @@ $nombre_usuario = $usuario['nombre'];
 $correo_usuario = $usuario['correo'];
 $inicial = strtoupper(substr($nombre_usuario, 0, 1));
 
-$stmt = $conn->prepare("
-    SELECT SUM(cantidad) as total
-    FROM estampas_usuario
-    WHERE usuario_id = ?
-");
+// ========== USAR SP_OBTENER_TOTAL_ESTAMPAS_USUARIO ==========
+$stmt = $conn->prepare("CALL SP_OBTENER_TOTAL_ESTAMPAS_USUARIO(?, @total)");
 $stmt->execute([$usuario_id]);
+$stmt = $conn->query("SELECT @total as total");
 $total_estampas = $stmt->fetch()['total'] ?? 0;
+$stmt->nextRowset(); // Limpiar resultados
+$stmt->nextRowset(); // Limpiar resultados
 
-// Estampas especiales (SSR y SR)
-$stmt = $conn->prepare("
-    SELECT SUM(eu.cantidad) as total
-    FROM estampas_usuario eu
-    JOIN jugadores j ON eu.jugador_id = j.id
-    WHERE eu.usuario_id = ? AND j.rareza IN ('ssr', 'sr')
-");
+// ========== USAR SP_OBTENER_ESTAMPAS_ESPECIALES_USUARIO ==========
+$stmt = $conn->prepare("CALL SP_OBTENER_ESTAMPAS_ESPECIALES_USUARIO(?, @total)");
 $stmt->execute([$usuario_id]);
+$stmt = $conn->query("SELECT @total as total");
 $estampas_especiales = $stmt->fetch()['total'] ?? 0;
+$stmt->nextRowset(); // Limpiar resultados
+$stmt->nextRowset(); // Limpiar resultados
 
-
-$stmt = $conn->prepare("
-    SELECT COUNT(*) as total
-    FROM ofertas
-    WHERE estado = 'completada' 
-    AND (usuario_id = ? OR aceptada_por = ?)
-");
-$stmt->execute([$usuario_id, $usuario_id]);
+// ========== USAR SP_OBTENER_TOTAL_INTERCAMBIOS_USUARIO ==========
+$stmt = $conn->prepare("CALL SP_OBTENER_TOTAL_INTERCAMBIOS_USUARIO(?, @total)");
+$stmt->execute([$usuario_id]);
+$stmt = $conn->query("SELECT @total as total");
 $intercambios = $stmt->fetch()['total'] ?? 0;
+$stmt->nextRowset(); // Limpiar resultados
+$stmt->nextRowset(); // Limpiar resultados
 
-
-if ($intercambios == 0) {
- 
-    $stmt = $conn->prepare("
-        SELECT COUNT(*) as total
-        FROM ofertas
-        WHERE estado = 'completada' AND usuario_id = ?
-    ");
-    $stmt->execute([$usuario_id]);
-    $intercambios = $stmt->fetch()['total'] ?? 0;
-}
 ?>
 
 <!DOCTYPE html>
@@ -140,7 +125,7 @@ if ($intercambios == 0) {
 
   <?php if(isset($_GET['error'])): ?>
   <div class="toast-message error" id="toastMessage">
-    ❌ <?php 
+    <?php 
       switch($_GET['error']):
         case 'campos_vacios': echo 'Todos los campos son obligatorios'; break;
         case 'password_mismatch': echo 'Las contraseñas nuevas no coinciden'; break;

@@ -160,3 +160,19 @@ SELECT COUNT(*) as total_jugadores FROM jugadores;
 
 ALTER TABLE ofertas ADD COLUMN aceptada_por INT NULL AFTER usuario_id;
 ALTER TABLE ofertas ADD FOREIGN KEY (aceptada_por) REFERENCES usuarios(id);
+-- 1. Verificar cuántas estampas tiene el usuario 4
+SELECT COUNT(*) as total_estampas FROM estampas_usuario WHERE usuario_id = 4;
+
+USE mundial2026;
+
+SELECT j.id, j.nombre, j.numero, j.posicion, j.rareza, j.foto, 
+       e.nombre as equipo_nombre, eu.cantidad, eu.fecha_obtencion
+FROM estampas_usuario eu
+JOIN jugadores j ON eu.jugador_id = j.id
+JOIN equipos e ON j.equipo_id = e.id
+WHERE eu.usuario_id = 4
+ORDER BY e.nombre, j.numero;
+
+
+select * from mundial2026.estampas_usuario;
+ALTER TABLE estampas_usuario ADD COLUMN fecha_obtencion TIMESTAMP DEFAULT CURRENT_TIMESTAMP;

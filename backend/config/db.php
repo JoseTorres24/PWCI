@@ -16,7 +16,7 @@ class Database {
             $this->host = $env['DB_HOST'] ?? '127.0.0.1';
             $this->db_name = $env['DB_NAME'] ?? 'mundial2026';
             $this->username = $env['DB_USER'] ?? 'root';
-            $this->password = $env['DB_PASS'] ?? '';
+            $this->password = $env['DB_PASS'] ?? '2405';
         } 
     }
 

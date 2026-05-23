@@ -20,39 +20,23 @@ $conn = $db->connect();
 $usuario_id = $_SESSION['usuario']['id'];
 $logger = new LoggingMiddleware($conn, $usuario_id);
 
-
-$stmt = $conn->prepare("
-    SELECT o.*, 
-           u.nombre as usuario_nombre,
-           jo.nombre as jugador_ofrece_nombre,
-           jo.rareza as ofrece_rareza,
-           jp.nombre as jugador_pide_nombre,
-           CASE WHEN o.usuario_id = ? THEN 1 ELSE 0 END as es_mia
-    FROM ofertas o
-    JOIN usuarios u ON o.usuario_id = u.id
-    JOIN jugadores jo ON o.jugador_ofrece = jo.id
-    LEFT JOIN jugadores jp ON o.jugador_pide = jp.id
-    WHERE o.estado = 'activa'
-    ORDER BY o.created_at DESC
-");
+// ========== USAR SP_OBTENER_OFERTAS_ACTIVAS ==========
+$stmt = $conn->prepare("CALL SP_OBTENER_OFERTAS_ACTIVAS(?)");
 $stmt->execute([$usuario_id]);
-$ofertas = $stmt->fetchAll();
+$ofertas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt->nextRowset(); // Limpiar resultados
 
-
-$stmt = $conn->prepare("
-    SELECT j.id, j.nombre, j.rareza, eu.cantidad, j.foto
-    FROM estampas_usuario eu
-    JOIN jugadores j ON eu.jugador_id = j.id
-    WHERE eu.usuario_id = ? AND eu.cantidad >= 1
-    ORDER BY j.nombre
-");
+// ========== USAR SP_OBTENER_MIS_JUGADORES_DISPONIBLES ==========
+$stmt = $conn->prepare("CALL SP_OBTENER_MIS_JUGADORES_DISPONIBLES(?)");
 $stmt->execute([$usuario_id]);
-$mis_jugadores = $stmt->fetchAll();
+$mis_jugadores = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt->nextRowset(); // Limpiar resultados
 
-
-$stmt = $conn->prepare("SELECT id, nombre, rareza FROM jugadores ORDER BY nombre");
+// ========== USAR SP_OBTENER_TODOS_JUGADORES ==========
+$stmt = $conn->prepare("CALL SP_OBTENER_TODOS_JUGADORES()");
 $stmt->execute();
-$todos_jugadores = $stmt->fetchAll();
+$todos_jugadores = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt->nextRowset(); // Limpiar resultados
 ?>
 
 <!DOCTYPE html>
@@ -86,20 +70,35 @@ $todos_jugadores = $stmt->fetchAll();
           <h1>Mercado de Intercambios</h1>
           <p class="hero-text">Encuentra ofertas activas y propón un intercambio para completar tu álbum.</p>
         </div>
+        <a class="home-button" href="/dashboard">Regresar al inicio</a>
       </section>
 
+      <!-- Botón para crear oferta -->
       <div class="create-offer-container">
         <button id="btnCrearOferta" class="btn-primary">Crear nueva oferta</button>
       </div>
 
-  
-      <section class="market-list">
+      <!-- Filtro de búsqueda -->
+      <div class="filters-bar">
+        <div class="search-box">
+          <input type="text" id="searchOferta" placeholder="Buscar oferta por usuario o jugador...">
+        </div>
+        <div class="stats-badge" id="statsOfertas">
+          <span id="ofertasMostradas">0</span> de <span id="ofertasTotal">0</span> ofertas
+        </div>
+      </div>
+
+      <!-- Lista de ofertas activas -->
+      <section class="market-list" id="ofertasContainer">
         <h2 class="section-title">Ofertas disponibles</h2>
         <?php if (empty($ofertas)): ?>
           <p class="no-offers">No hay ofertas activas. ¡Sé el primero en crear una!</p>
         <?php else: ?>
           <?php foreach ($ofertas as $oferta): ?>
-          <article class="offer-card <?php echo $oferta['es_mia'] ? 'mi-oferta' : ''; ?>" data-oferta-id="<?php echo $oferta['id']; ?>">
+          <article class="offer-card <?php echo $oferta['es_mia'] ? 'mi-oferta' : ''; ?>" 
+                   data-oferta-id="<?php echo $oferta['id']; ?>" 
+                   data-usuario="<?php echo strtolower($oferta['usuario_nombre']); ?>" 
+                   data-jugador="<?php echo strtolower($oferta['jugador_ofrece_nombre']); ?>">
             <p class="offer-user">
               <strong><?php echo htmlspecialchars($oferta['usuario_nombre']); ?></strong>
               <?php if ($oferta['es_mia']): ?>
@@ -116,8 +115,8 @@ $todos_jugadores = $stmt->fetchAll();
               </div>
               <div class="offer-arrow">→</div>
               <div class="offer-box dark">
-                <span class="offer-label">Busca</span>
-                <strong><?php echo $oferta['jugador_pide_nombre'] ?? ' Cualquier estampa '; ?></strong>
+                <span class="offer-label">🔍 Busca</span>
+                <strong><?php echo $oferta['jugador_pide_nombre'] ?? 'Cualquier estampa'; ?></strong>
                 <?php if ($oferta['jugador_pide_nombre']): ?>
                   <small>x<?php echo $oferta['cantidad_pide']; ?></small>
                 <?php endif; ?>
@@ -135,6 +134,7 @@ $todos_jugadores = $stmt->fetchAll();
     </main>
   </div>
 
+  <!-- Modal para crear oferta -->
   <div id="modalOferta" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
@@ -157,7 +157,7 @@ $todos_jugadores = $stmt->fetchAll();
           <input type="number" id="cantidad_ofrece" min="1" value="1" required>
         </div>
         <div class="form-group">
-          <label>¿Qué buscas? (opcional)</label>
+          <label>🔍 ¿Qué buscas? (opcional)</label>
           <select id="jugador_pide">
             <option value="">Cualquier jugador</option>
             <?php foreach ($todos_jugadores as $jugador): ?>
@@ -180,6 +180,37 @@ $todos_jugadores = $stmt->fetchAll();
   <div id="toastMessage" class="toast-message"></div>
 
   <script>
+    // Filtro de búsqueda en tiempo real
+    const searchInput = document.getElementById('searchOferta');
+    const ofertas = Array.from(document.querySelectorAll('.offer-card'));
+    const ofertasMostradasSpan = document.getElementById('ofertasMostradas');
+    const ofertasTotalSpan = document.getElementById('ofertasTotal');
+    
+    function filtrarOfertas() {
+      const busqueda = searchInput.value.toLowerCase();
+      let visibles = 0;
+      
+      ofertas.forEach(oferta => {
+        const usuario = oferta.dataset.usuario || '';
+        const jugador = oferta.dataset.jugador || '';
+        
+        if (usuario.includes(busqueda) || jugador.includes(busqueda)) {
+          oferta.style.display = '';
+          visibles++;
+        } else {
+          oferta.style.display = 'none';
+        }
+      });
+      
+      ofertasMostradasSpan.textContent = visibles;
+      ofertasTotalSpan.textContent = ofertas.length;
+    }
+    
+    searchInput.addEventListener('input', filtrarOfertas);
+    ofertasTotalSpan.textContent = ofertas.length;
+    ofertasMostradasSpan.textContent = ofertas.length;
+    
+    // Modal
     const modal = document.getElementById('modalOferta');
     const btnCrear = document.getElementById('btnCrearOferta');
     const spanClose = document.getElementsByClassName('close')[0];

@@ -37,6 +37,7 @@ $total_usuarios = $stmt->fetch()['total'];
       <a href="/admin/dashboard" class="activo">Panel Principal</a>
       <a href="/admin/jugadores">Gestionar Jugadores</a>
       <a href="/admin/equipos">Gestionar Equipos</a>
+      <a href="/admin/gestion_usuarios">Gestion Usuarios</a>
       <a href="/admin/logout" class="salir">Cerrar sesión</a>
     </nav>
   </div>
