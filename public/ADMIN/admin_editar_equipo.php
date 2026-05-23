@@ -22,9 +22,10 @@ if (!$equipo) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nombre = trim($_POST['nombre']);
     $grupo = trim($_POST['grupo']);
+    $actualizar_imagen = 0;
+    $escudo_blob = null;
     
     // Procesar imagen si se subió
-    $escudo_blob = null;
     if (isset($_FILES['escudo']) && $_FILES['escudo']['error'] === UPLOAD_ERR_OK) {
         $allowed = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
@@ -33,21 +34,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if (in_array($mime_type, $allowed)) {
             $escudo_blob = file_get_contents($_FILES['escudo']['tmp_name']);
+            $actualizar_imagen = 1;
         }
     }
     
-    // Si se subió nueva imagen, actualizarla; si no, mantener la anterior
-    if ($escudo_blob !== null) {
-        $stmt = $conn->prepare("UPDATE equipos SET nombre = ?, grupo = ?, escudo = ? WHERE id = ?");
-        $stmt->bindParam(1, $nombre);
-        $stmt->bindParam(2, $grupo);
-        $stmt->bindParam(3, $escudo_blob, PDO::PARAM_LOB);
-        $stmt->bindParam(4, $id);
-        $stmt->execute();
-    } else {
-        $stmt = $conn->prepare("UPDATE equipos SET nombre = ?, grupo = ? WHERE id = ?");
-        $stmt->execute([$nombre, $grupo, $id]);
-    }
+    // ========== USAR SP_ACTUALIZAR_EQUIPO_CON_IMAGEN ==========
+    $stmt = $conn->prepare("CALL SP_ACTUALIZAR_EQUIPO_CON_IMAGEN(?, ?, ?, ?, ?)");
+    $stmt->bindParam(1, $id);
+    $stmt->bindParam(2, $nombre);
+    $stmt->bindParam(3, $grupo);
+    $stmt->bindParam(4, $escudo_blob, $actualizar_imagen === 1 ? PDO::PARAM_LOB : PDO::PARAM_NULL);
+    $stmt->bindParam(5, $actualizar_imagen);
+    $stmt->execute();
     
     header('Location: /admin/equipos?success=editado');
     exit;

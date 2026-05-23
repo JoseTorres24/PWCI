@@ -342,6 +342,443 @@ BEGIN
 END$$
 DELIMITER ;
 
+
+-- ============================================
+-- SP_OBTENER_PROGRESO_ALBUM
+-- Obtiene el progreso de colección del usuario por equipo
+-- ============================================
+
+DROP PROCEDURE IF EXISTS SP_OBTENER_PROGRESO_ALBUM;
+
+DELIMITER $$
+CREATE PROCEDURE SP_OBTENER_PROGRESO_ALBUM(
+    IN p_usuario_id INT
+)
+BEGIN
+    SELECT 
+        e.id,
+        e.nombre,
+        e.grupo,
+        e.escudo,
+        COUNT(DISTINCT j.id) as total_jugadores,
+        COUNT(CASE WHEN eu.usuario_id IS NOT NULL THEN 1 END) as obtenidas,
+        ROUND(
+            IF(COUNT(DISTINCT j.id) > 0, 
+               (COUNT(CASE WHEN eu.usuario_id IS NOT NULL THEN 1 END) / COUNT(DISTINCT j.id)) * 100, 
+               0
+            ), 2
+        ) as progreso
+    FROM equipos e
+    LEFT JOIN jugadores j ON j.equipo_id = e.id
+    LEFT JOIN estampas_usuario eu ON j.id = eu.jugador_id AND eu.usuario_id = p_usuario_id
+    GROUP BY e.id, e.nombre, e.grupo, e.escudo
+    ORDER BY e.nombre;
+END$$
+DELIMITER ;
+
+-- ============================================
+-- SP_OBTENER_GRUPOS
+-- Obtiene los grupos únicos para los filtros
+-- ============================================
+DROP PROCEDURE IF EXISTS SP_OBTENER_GRUPOS;
+
+DELIMITER $$
+CREATE PROCEDURE SP_OBTENER_GRUPOS()
+BEGIN
+    SELECT DISTINCT grupo FROM equipos ORDER BY grupo;
+END$$
+DELIMITER ;
+
+
+-- ============================================
+-- STORED PROCEDURES PARA PERFIL DE USUARIO
+-- ============================================
+
+-- ============================================
+-- SP_OBTENER_TOTAL_ESTAMPAS_USUARIO
+-- Obtiene la suma total de estampas del usuario (incluyendo repetidas)
+-- ============================================
+DROP PROCEDURE IF EXISTS SP_OBTENER_TOTAL_ESTAMPAS_USUARIO;
+
+DELIMITER $$
+CREATE PROCEDURE SP_OBTENER_TOTAL_ESTAMPAS_USUARIO(
+    IN p_usuario_id INT,
+    OUT p_total INT
+)
+BEGIN
+    SELECT COALESCE(SUM(cantidad), 0) INTO p_total
+    FROM estampas_usuario
+    WHERE usuario_id = p_usuario_id;
+END$$
+DELIMITER ;
+
+-- ============================================
+-- SP_OBTENER_ESTAMPAS_ESPECIALES_USUARIO
+-- Obtiene la suma de estampas SSR y SR del usuario
+-- ============================================
+DROP PROCEDURE IF EXISTS SP_OBTENER_ESTAMPAS_ESPECIALES_USUARIO;
+
+DELIMITER $$
+CREATE PROCEDURE SP_OBTENER_ESTAMPAS_ESPECIALES_USUARIO(
+    IN p_usuario_id INT,
+    OUT p_total INT
+)
+BEGIN
+    SELECT COALESCE(SUM(eu.cantidad), 0) INTO p_total
+    FROM estampas_usuario eu
+    INNER JOIN jugadores j ON eu.jugador_id = j.id
+    WHERE eu.usuario_id = p_usuario_id AND j.rareza IN ('ssr', 'sr');
+END$$
+DELIMITER ;
+
+-- ============================================
+-- SP_OBTENER_TOTAL_INTERCAMBIOS_USUARIO
+-- Obtiene la cantidad de intercambios completados del usuario
+-- ============================================
+DROP PROCEDURE IF EXISTS SP_OBTENER_TOTAL_INTERCAMBIOS_USUARIO;
+
+DELIMITER $$
+CREATE PROCEDURE SP_OBTENER_TOTAL_INTERCAMBIOS_USUARIO(
+    IN p_usuario_id INT,
+    OUT p_total INT
+)
+BEGIN
+    DECLARE v_total INT DEFAULT 0;
+    
+    -- Primero intentar con aceptada_por
+    SELECT COUNT(*) INTO v_total
+    FROM ofertas
+    WHERE estado = 'completada' 
+    AND (usuario_id = p_usuario_id OR aceptada_por = p_usuario_id);
+    
+    -- Si no hay resultados, intentar solo con usuario_id
+    IF v_total = 0 THEN
+        SELECT COUNT(*) INTO v_total
+        FROM ofertas
+        WHERE estado = 'completada' AND usuario_id = p_usuario_id;
+    END IF;
+    
+    SET p_total = v_total;
+END$$
+DELIMITER ;
+
+-- ============================================
+-- SP_OBTENER_DATOS_PERFIL
+-- Obtiene todos los datos del perfil en una sola llamada
+-- ============================================
+DROP PROCEDURE IF EXISTS SP_OBTENER_DATOS_PERFIL;
+
+DELIMITER $$
+CREATE PROCEDURE SP_OBTENER_DATOS_PERFIL(
+    IN p_usuario_id INT,
+    OUT p_nombre VARCHAR(100),
+    OUT p_correo VARCHAR(100),
+    OUT p_rol VARCHAR(20),
+    OUT p_fecha_registro VARCHAR(20),
+    OUT p_total_estampas INT,
+    OUT p_estampas_especiales INT,
+    OUT p_intercambios INT
+)
+BEGIN
+    -- Datos del usuario
+    SELECT nombre, correo, rol, DATE_FORMAT(created_at, '%d/%m/%Y') 
+    INTO p_nombre, p_correo, p_rol, p_fecha_registro
+    FROM usuarios WHERE id = p_usuario_id;
+    
+    -- Total de estampas
+    SELECT COALESCE(SUM(cantidad), 0) INTO p_total_estampas
+    FROM estampas_usuario WHERE usuario_id = p_usuario_id;
+    
+    -- Estampas especiales (SSR + SR)
+    SELECT COALESCE(SUM(eu.cantidad), 0) INTO p_estampas_especiales
+    FROM estampas_usuario eu
+    INNER JOIN jugadores j ON eu.jugador_id = j.id
+    WHERE eu.usuario_id = p_usuario_id AND j.rareza IN ('ssr', 'sr');
+    
+    -- Intercambios completados
+    SELECT COUNT(*) INTO p_intercambios
+    FROM ofertas
+    WHERE estado = 'completada' 
+    AND (usuario_id = p_usuario_id OR aceptada_por = p_usuario_id);
+    
+    -- Si es 0, intentar solo con usuario_id
+    IF p_intercambios = 0 THEN
+        SELECT COUNT(*) INTO p_intercambios
+        FROM ofertas
+        WHERE estado = 'completada' AND usuario_id = p_usuario_id;
+    END IF;
+END$$
+DELIMITER ;
+-- ============================================
+-- SP_GUARDAR_CARTAS_OBTENIDAS
+-- Guarda o actualiza las estampas obtenidas por el usuario
+-- ============================================
+USE mundial2026;
+
+DROP PROCEDURE IF EXISTS SP_GUARDAR_CARTAS_OBTENIDAS;
+
+DELIMITER $$
+CREATE PROCEDURE SP_GUARDAR_CARTAS_OBTENIDAS(
+    IN p_usuario_id INT,
+    IN p_jugador_id INT,
+    IN p_cantidad INT
+)
+BEGIN
+    INSERT INTO estampas_usuario (usuario_id, jugador_id, cantidad, fecha_obtencion)
+    VALUES (p_usuario_id, p_jugador_id, p_cantidad, NOW())
+    ON DUPLICATE KEY UPDATE 
+        cantidad = cantidad + p_cantidad,
+        fecha_obtencion = NOW();
+END$$
+DELIMITER ;
+
+-- ============================================
+-- SP_ABRIR_SOBRE_COMPLETO
+-- Proceso completo de abrir un sobre (selección + guardado)
+-- ============================================
+DROP PROCEDURE IF EXISTS SP_ABRIR_SOBRE_COMPLETO;
+
+DELIMITER $$
+CREATE PROCEDURE SP_ABRIR_SOBRE_COMPLETO(
+    IN p_usuario_id INT,
+    IN p_sobre_id INT,
+    OUT p_cartas_json JSON,
+    OUT p_mensaje VARCHAR(255)
+)
+BEGIN
+    DECLARE v_cantidad_cartas INT;
+    DECLARE v_contador INT DEFAULT 0;
+    DECLARE v_jugador_id INT;
+    DECLARE v_jugador_nombre VARCHAR(100);
+    DECLARE v_jugador_rareza VARCHAR(10);
+    DECLARE v_equipo_nombre VARCHAR(100);
+    DECLARE v_temp_json TEXT DEFAULT '[';
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SET p_mensaje = 'Error al abrir el sobre';
+        SET p_cartas_json = NULL;
+        ROLLBACK;
+    END;
+    
+    START TRANSACTION;
+    
+    -- Obtener cantidad de cartas del sobre
+    SELECT cantidad_cartas INTO v_cantidad_cartas
+    FROM sobres WHERE id = p_sobre_id;
+    
+    -- Crear tabla temporal
+    DROP TEMPORARY TABLE IF EXISTS temp_cartas_abrir;
+    CREATE TEMPORARY TABLE temp_cartas_abrir (
+        id INT,
+        nombre VARCHAR(100),
+        rareza VARCHAR(10),
+        equipo VARCHAR(100)
+    );
+    
+    -- Seleccionar cartas según probabilidades
+    WHILE v_contador < v_cantidad_cartas DO
+        -- Seleccionar un jugador aleatorio basado en probabilidades
+        SELECT j.id, j.nombre, j.rareza, e.nombre
+        INTO v_jugador_id, v_jugador_nombre, v_jugador_rareza, v_equipo_nombre
+        FROM sobre_jugadores sj
+        JOIN jugadores j ON sj.jugador_id = j.id
+        JOIN equipos e ON j.equipo_id = e.id
+        WHERE sj.sobre_id = p_sobre_id
+        ORDER BY RAND() * (100 / sj.probabilidad)
+        LIMIT 1;
+        
+        -- Insertar en tabla temporal
+        INSERT INTO temp_cartas_abrir VALUES (v_jugador_id, v_jugador_nombre, v_jugador_rareza, v_equipo_nombre);
+        
+        -- Guardar en la colección del usuario
+        INSERT INTO estampas_usuario (usuario_id, jugador_id, cantidad, fecha_obtencion)
+        VALUES (p_usuario_id, v_jugador_id, 1, NOW())
+        ON DUPLICATE KEY UPDATE 
+            cantidad = cantidad + 1,
+            fecha_obtencion = NOW();
+        
+        -- Construir JSON
+        IF v_contador > 0 THEN
+            SET v_temp_json = CONCAT(v_temp_json, ',');
+        END IF;
+        
+        SET v_temp_json = CONCAT(v_temp_json, 
+            '{"id":', v_jugador_id, 
+            ',"nombre":"', v_jugador_nombre, 
+            '","rareza":"', v_jugador_rareza, 
+            '","equipo":"', v_equipo_nombre, '"}');
+        
+        SET v_contador = v_contador + 1;
+    END WHILE;
+    
+    SET v_temp_json = CONCAT(v_temp_json, ']');
+    SET p_cartas_json = CAST(v_temp_json AS JSON);
+    SET p_mensaje = CONCAT('¡Has obtenido ', v_cantidad_cartas, ' nuevas estampas!');
+    
+    -- Registrar en historial
+    INSERT INTO historial (usuario_id, descripcion, fecha)
+    VALUES (p_usuario_id, CONCAT('Abrió un sobre y obtuvo ', v_cantidad_cartas, ' estampas'), NOW());
+    
+    DROP TEMPORARY TABLE IF EXISTS temp_cartas_abrir;
+    
+    COMMIT;
+END$$
+DELIMITER ;
+
+-- ============================================
+-- SP_ACTUALIZAR_EQUIPO_CON_IMAGEN
+-- Actualiza equipo con opción de cambiar imagen
+-- ============================================
+
+DROP PROCEDURE IF EXISTS SP_ACTUALIZAR_EQUIPO_CON_IMAGEN;
+
+DELIMITER $$
+CREATE PROCEDURE SP_ACTUALIZAR_EQUIPO_CON_IMAGEN(
+    IN p_id INT,
+    IN p_nombre VARCHAR(100),
+    IN p_grupo CHAR(1),
+    IN p_escudo LONGBLOB,
+    IN p_actualizar_imagen TINYINT
+)
+BEGIN
+    IF p_actualizar_imagen = 1 THEN
+        UPDATE equipos 
+        SET nombre = p_nombre, grupo = p_grupo, escudo = p_escudo
+        WHERE id = p_id;
+    ELSE
+        UPDATE equipos 
+        SET nombre = p_nombre, grupo = p_grupo
+        WHERE id = p_id;
+    END IF;
+END$$
+DELIMITER ;
+
+-- ============================================
+-- SP_ACTUALIZAR_JUGADOR_CON_IMAGEN
+-- Actualiza jugador con opción de cambiar imagen
+-- ============================================
+DROP PROCEDURE IF EXISTS SP_ACTUALIZAR_JUGADOR_CON_IMAGEN;
+
+DELIMITER $$
+CREATE PROCEDURE SP_ACTUALIZAR_JUGADOR_CON_IMAGEN(
+    IN p_id INT,
+    IN p_nombre VARCHAR(100),
+    IN p_numero INT,
+    IN p_posicion VARCHAR(50),
+    IN p_equipo_id INT,
+    IN p_rareza VARCHAR(10),
+    IN p_foto LONGBLOB,
+    IN p_actualizar_imagen TINYINT
+)
+BEGIN
+    IF p_actualizar_imagen = 1 THEN
+        UPDATE jugadores 
+        SET nombre = p_nombre, numero = p_numero, posicion = p_posicion, 
+            equipo_id = p_equipo_id, rareza = p_rareza, foto = p_foto
+        WHERE id = p_id;
+    ELSE
+        UPDATE jugadores 
+        SET nombre = p_nombre, numero = p_numero, posicion = p_posicion, 
+            equipo_id = p_equipo_id, rareza = p_rareza
+        WHERE id = p_id;
+    END IF;
+END$$
+DELIMITER ;
+
+
+-- ============================================
+-- SP_CREAR_EQUIPO_CON_IMAGEN
+-- Crea un nuevo equipo con opción de imagen
+-- ============================================
+
+DROP PROCEDURE IF EXISTS SP_CREAR_EQUIPO_CON_IMAGEN;
+
+DELIMITER $$
+CREATE PROCEDURE SP_CREAR_EQUIPO_CON_IMAGEN(
+    IN p_nombre VARCHAR(100),
+    IN p_grupo CHAR(1),
+    IN p_escudo LONGBLOB,
+    OUT p_id INT,
+    OUT p_success TINYINT,
+    OUT p_mensaje VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SET p_success = 0;
+        SET p_mensaje = 'Error al crear el equipo';
+        ROLLBACK;
+    END;
+    
+    START TRANSACTION;
+    
+    INSERT INTO equipos (nombre, grupo, escudo, created_at)
+    VALUES (p_nombre, p_grupo, p_escudo, NOW());
+    
+    SET p_id = LAST_INSERT_ID();
+    SET p_success = 1;
+    SET p_mensaje = 'Equipo creado exitosamente';
+    
+    COMMIT;
+END$$
+DELIMITER ;
+
+-- ============================================
+-- SP_CREAR_JUGADOR_CON_IMAGEN
+-- Crea un nuevo jugador con opción de imagen
+-- ============================================
+DROP PROCEDURE IF EXISTS SP_CREAR_JUGADOR_CON_IMAGEN;
+
+DELIMITER $$
+CREATE PROCEDURE SP_CREAR_JUGADOR_CON_IMAGEN(
+    IN p_nombre VARCHAR(100),
+    IN p_numero INT,
+    IN p_posicion VARCHAR(50),
+    IN p_equipo_id INT,
+    IN p_rareza VARCHAR(10),
+    IN p_foto LONGBLOB,
+    OUT p_id INT,
+    OUT p_success TINYINT,
+    OUT p_mensaje VARCHAR(255)
+)
+BEGIN
+    DECLARE v_probabilidad INT;
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SET p_success = 0;
+        SET p_mensaje = 'Error al crear el jugador';
+        ROLLBACK;
+    END;
+    
+    START TRANSACTION;
+    
+    -- Determinar probabilidad según rareza
+    CASE p_rareza
+        WHEN 'ssr' THEN SET v_probabilidad = 5;
+        WHEN 'sr' THEN SET v_probabilidad = 25;
+        WHEN 'r' THEN SET v_probabilidad = 70;
+        ELSE SET v_probabilidad = 70;
+    END CASE;
+    
+    -- Insertar jugador
+    INSERT INTO jugadores (nombre, numero, posicion, equipo_id, rareza, foto, created_at)
+    VALUES (p_nombre, p_numero, p_posicion, p_equipo_id, p_rareza, p_foto, NOW());
+    
+    SET p_id = LAST_INSERT_ID();
+    
+    -- Insertar en sobre_jugadores (sobre por defecto = 1)
+    INSERT INTO sobre_jugadores (sobre_id, jugador_id, probabilidad)
+    VALUES (1, p_id, v_probabilidad);
+    
+    SET p_success = 1;
+    SET p_mensaje = 'Jugador creado exitosamente';
+    
+    COMMIT;
+END$$
+DELIMITER ;
+
+
 -- ============================================
 -- Verificar que los SP se crearon
 -- ============================================

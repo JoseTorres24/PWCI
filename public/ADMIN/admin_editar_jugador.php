@@ -27,9 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $posicion = $_POST['posicion'];
     $equipo_id = $_POST['equipo_id'];
     $rareza = $_POST['rareza'];
+    $actualizar_imagen = 0;
+    $foto_blob = null;
     
     // Procesar imagen si se subió
-    $foto_blob = null;
     if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
         $allowed = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
@@ -38,24 +39,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if (in_array($mime_type, $allowed)) {
             $foto_blob = file_get_contents($_FILES['foto']['tmp_name']);
+            $actualizar_imagen = 1;
         }
     }
     
-    // Si se subió nueva imagen, actualizarla; si no, mantener la anterior
-    if ($foto_blob !== null) {
-        $stmt = $conn->prepare("UPDATE jugadores SET nombre=?, numero=?, posicion=?, equipo_id=?, rareza=?, foto=? WHERE id=?");
-        $stmt->bindParam(1, $nombre);
-        $stmt->bindParam(2, $numero);
-        $stmt->bindParam(3, $posicion);
-        $stmt->bindParam(4, $equipo_id);
-        $stmt->bindParam(5, $rareza);
-        $stmt->bindParam(6, $foto_blob, PDO::PARAM_LOB);
-        $stmt->bindParam(7, $id);
-        $stmt->execute();
-    } else {
-        $stmt = $conn->prepare("UPDATE jugadores SET nombre=?, numero=?, posicion=?, equipo_id=?, rareza=? WHERE id=?");
-        $stmt->execute([$nombre, $numero, $posicion, $equipo_id, $rareza, $id]);
-    }
+    // ========== USAR SP_ACTUALIZAR_JUGADOR_CON_IMAGEN ==========
+    $stmt = $conn->prepare("CALL SP_ACTUALIZAR_JUGADOR_CON_IMAGEN(?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bindParam(1, $id);
+    $stmt->bindParam(2, $nombre);
+    $stmt->bindParam(3, $numero);
+    $stmt->bindParam(4, $posicion);
+    $stmt->bindParam(5, $equipo_id);
+    $stmt->bindParam(6, $rareza);
+    $stmt->bindParam(7, $foto_blob, $actualizar_imagen === 1 ? PDO::PARAM_LOB : PDO::PARAM_NULL);
+    $stmt->bindParam(8, $actualizar_imagen);
+    $stmt->execute();
     
     header('Location: /admin/jugadores?success=editado');
     exit;

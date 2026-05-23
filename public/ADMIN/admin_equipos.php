@@ -9,14 +9,14 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/backend/config/db.php';
 $db = new Database();
 $conn = $db->connect();
 
-// Procesar formulario de creación CON IMAGEN
+// ========== CREAR EQUIPO CON SP_CREAR_EQUIPO_CON_IMAGEN ==========
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['crear_equipo'])) {
     $nombre = trim($_POST['nombre']);
     $grupo = trim($_POST['grupo']);
+    $escudo_blob = null;
     
     if (!empty($nombre) && !empty($grupo)) {
         // Procesar imagen si se subió
-        $escudo_blob = null;
         if (isset($_FILES['escudo']) && $_FILES['escudo']['error'] === UPLOAD_ERR_OK) {
             $allowed = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
@@ -28,37 +28,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['crear_equipo'])) {
             }
         }
         
-        $stmt = $conn->prepare("INSERT INTO equipos (nombre, grupo, escudo) VALUES (?, ?, ?)");
+        // Usar SP_CREAR_EQUIPO_CON_IMAGEN
+        $stmt = $conn->prepare("CALL SP_CREAR_EQUIPO_CON_IMAGEN(?, ?, ?, @id, @success, @mensaje)");
         $stmt->bindParam(1, $nombre);
         $stmt->bindParam(2, $grupo);
         $stmt->bindParam(3, $escudo_blob, PDO::PARAM_LOB);
         $stmt->execute();
-        header('Location: /admin/equipos?success=creado');
+        
+        $stmt = $conn->query("SELECT @id as id, @success as success, @mensaje as mensaje");
+        $result = $stmt->fetch();
+        $stmt->nextRowset();
+        $stmt->nextRowset();
+        
+        if ($result['success'] == 1) {
+            header('Location: /admin/equipos?success=creado');
+        } else {
+            header('Location: /admin/equipos?error=' . urlencode($result['mensaje']));
+        }
         exit;
     }
 }
 
-if (isset($_GET['editar_escudo'])) {
-    $id = $_GET['editar_escudo'];
-    // Redirigir a página de edición
-    header("Location: /admin/editar_equipo?id=$id");
-    exit;
-}
-
-// Procesar eliminación
+// ========== ELIMINAR EQUIPO CON SP_ELIMINAR_EQUIPO_SEGURO ==========
 if (isset($_GET['eliminar'])) {
     $id = $_GET['eliminar'];
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM jugadores WHERE equipo_id = ?");
+    
+    $stmt = $conn->prepare("CALL SP_ELIMINAR_EQUIPO_SEGURO(?, @success, @mensaje)");
     $stmt->execute([$id]);
-    if ($stmt->fetchColumn() == 0) {
-        $stmt = $conn->prepare("DELETE FROM equipos WHERE id = ?");
-        $stmt->execute([$id]);
+    
+    $stmt = $conn->query("SELECT @success as success, @mensaje as mensaje");
+    $result = $stmt->fetch();
+    $stmt->nextRowset();
+    $stmt->nextRowset();
+    
+    if ($result['success'] == 1) {
         header('Location: /admin/equipos?success=eliminado');
-        exit;
     } else {
-        header('Location: /admin/equipos?error=tiene_jugadores');
-        exit;
+        header('Location: /admin/equipos?error=' . urlencode($result['mensaje']));
     }
+    exit;
 }
 
 // Obtener equipos

@@ -9,16 +9,16 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/backend/config/db.php';
 $db = new Database();
 $conn = $db->connect();
 
-// Crear jugador CON IMAGEN
+// ========== CREAR JUGADOR CON SP_CREAR_JUGADOR_CON_IMAGEN ==========
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['crear_jugador'])) {
     $nombre = trim($_POST['nombre']);
     $numero = $_POST['numero'];
     $posicion = $_POST['posicion'];
     $equipo_id = $_POST['equipo_id'];
     $rareza = $_POST['rareza'];
+    $foto_blob = null;
     
     // Procesar imagen si se subió
-    $foto_blob = null;
     if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
         $allowed = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
@@ -30,7 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['crear_jugador'])) {
         }
     }
     
-    $stmt = $conn->prepare("INSERT INTO jugadores (nombre, numero, posicion, equipo_id, rareza, foto) VALUES (?, ?, ?, ?, ?, ?)");
+    // Usar SP_CREAR_JUGADOR_CON_IMAGEN
+    $stmt = $conn->prepare("CALL SP_CREAR_JUGADOR_CON_IMAGEN(?, ?, ?, ?, ?, ?, @id, @success, @mensaje)");
     $stmt->bindParam(1, $nombre);
     $stmt->bindParam(2, $numero);
     $stmt->bindParam(3, $posicion);
@@ -38,19 +39,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['crear_jugador'])) {
     $stmt->bindParam(5, $rareza);
     $stmt->bindParam(6, $foto_blob, PDO::PARAM_LOB);
     $stmt->execute();
-    header('Location: /admin/jugadores?success=creado');
+    
+    $stmt = $conn->query("SELECT @id as id, @success as success, @mensaje as mensaje");
+    $result = $stmt->fetch();
+    $stmt->nextRowset();
+    $stmt->nextRowset();
+    
+    if ($result['success'] == 1) {
+        header('Location: /admin/jugadores?success=creado');
+    } else {
+        header('Location: /admin/jugadores?error=' . urlencode($result['mensaje']));
+    }
     exit;
 }
 
-// Eliminar jugador
+// ========== ELIMINAR JUGADOR CON SP_ELIMINAR_JUGADOR_SEGURO ==========
 if (isset($_GET['eliminar'])) {
     $id = $_GET['eliminar'];
-    $stmt = $conn->prepare("DELETE FROM jugadores WHERE id = ?");
+    
+    $stmt = $conn->prepare("CALL SP_ELIMINAR_JUGADOR_SEGURO(?, @success, @mensaje)");
     $stmt->execute([$id]);
-    header('Location: /admin/jugadores?success=eliminado');
+    
+    $stmt = $conn->query("SELECT @success as success, @mensaje as mensaje");
+    $result = $stmt->fetch();
+    $stmt->nextRowset();
+    $stmt->nextRowset();
+    
+    if ($result['success'] == 1) {
+        header('Location: /admin/jugadores?success=eliminado');
+    } else {
+        header('Location: /admin/jugadores?error=' . urlencode($result['mensaje']));
+    }
     exit;
 }
 
+// Obtener equipos y jugadores para mostrar
 $equipos = $conn->query("SELECT id, nombre FROM equipos ORDER BY nombre")->fetchAll();
 $jugadores = $conn->query("SELECT j.*, e.nombre as equipo_nombre FROM jugadores j JOIN equipos e ON j.equipo_id = e.id ORDER BY e.nombre, j.numero")->fetchAll();
 ?>
